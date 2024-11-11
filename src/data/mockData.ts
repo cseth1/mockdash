@@ -44,7 +44,7 @@ export interface Initiative {
   title: string;
   owner: string;
   progress: number;
-  status: 'on-track' | 'at-risk' | 'delayed';
+  status: 'on-track' | 'at-risk' | 'delayed' | 'completed' | 'canceled';
   dueDate: string;
   department: string;
   description: string;
@@ -59,6 +59,8 @@ export interface Initiative {
   timeTracking: TimeEntry[];
   documentation: Document[];
   integrations: Integration[];
+  archived?: boolean;
+  completedDate?: string;
   budget: {
     allocated: number;
     spent: number;

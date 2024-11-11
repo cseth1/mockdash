@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, ListTodo, PlusCircle, RefreshCw, Target, Users, Settings } from 'lucide-react';
+import { BarChart3, ListTodo, PlusCircle, Target, Users, Settings, Archive, RefreshCw } from 'lucide-react';
 import InitiativeCard from './components/InitiativeCard';
 import ProgressChart from './components/ProgressChart';
 import MetricCard from './components/MetricCard';
@@ -12,11 +12,20 @@ import type { Initiative } from './data/mockData';
 
 function App() {
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
   const [showNewInitiative, setShowNewInitiative] = useState(false);
   const [isAdmin] = useState(true);
   const [selectedInitiative, setSelectedInitiative] = useState<number | null>(null);
   const [initiatives, setInitiatives] = useState(initialInitiatives);
   const [updates, setUpdates] = useState(initialUpdates);
+  const [statusFilter, setStatusFilter] = useState<Initiative['status'] | 'all'>('all');
+  const [departmentFilter, setDepartmentFilter] = useState<string>('All Departments');
+
+  const activeInitiatives = initiatives.filter(i => !i.archived);
+  const archivedInitiatives = initiatives.filter(i => i.archived);
+  const filteredInitiatives = (showArchive ? archivedInitiatives : activeInitiatives)
+    .filter(i => (statusFilter === 'all' || i.status === statusFilter) &&
+      (departmentFilter === 'All Departments' || i.department === departmentFilter));
 
   const handleInitiativeClick = (id: number) => {
     setSelectedInitiative(id);
@@ -29,10 +38,12 @@ function App() {
   const handleNewInitiative = (initiativeData: Omit<Initiative, 'id'>) => {
     const newInitiative = {
       ...initiativeData,
-      id: Math.max(...initiatives.map(i => i.id)) + 1
+      id: Math.max(...initiatives.map(i => i.id)) + 1,
+      archived: false,
+      projectId: `HR-${new Date().getFullYear()}-${String(initiatives.length + 1).padStart(3, '0')}`,
     };
     setInitiatives(prev => [...prev, newInitiative]);
-    
+
     const newUpdate = {
       id: Math.max(...updates.map(u => u.id)) + 1,
       initiative: initiativeData.title,
@@ -42,11 +53,25 @@ function App() {
       type: 'status' as const
     };
     setUpdates(prev => [newUpdate, ...prev]);
+    setShowNewInitiative(false);
   };
 
   const handleInitiativeUpdate = (updatedInitiative: Initiative) => {
     setInitiatives(prev =>
       prev.map(i => i.id === updatedInitiative.id ? updatedInitiative : i)
+    );
+  };
+
+  const handleArchiveInitiative = (id: number) => {
+    setInitiatives(prev =>
+      prev.map(i => i.id === id ? { ...i, archived: true } : i)
+    );
+    setSelectedInitiative(null);
+  };
+
+  const handleRestoreInitiative = (id: number) => {
+    setInitiatives(prev =>
+      prev.map(i => i.id === id ? { ...i, archived: false } : i)
     );
   };
 
@@ -65,8 +90,10 @@ function App() {
     setUpdates(prev => [newUpdate, ...prev]);
   };
 
+  // Render InitiativeDetails if an initiative is selected
   if (selectedInitiative !== null) {
     const initiative = initiatives.find(i => i.id === selectedInitiative);
+    
     if (initiative) {
       return (
         <InitiativeDetails
@@ -74,20 +101,31 @@ function App() {
           onBack={handleBackClick}
           onUpdate={handleInitiativeUpdate}
           onAddUpdate={handleAddUpdate}
+          onArchive={() => handleArchiveInitiative(initiative.id)}
           updates={updates.filter(u => u.initiative === initiative.title)}
         />
+      );
+    } else {
+      // If initiative is not found, return a fallback message
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p className="text-gray-600">Initiative not found. Please try selecting another initiative.</p>
+          <button onClick={handleBackClick} className="ml-4 px-4 py-2 bg-[#500000] text-white rounded">
+            Back to Dashboard
+          </button>
+        </div>
       );
     }
   }
 
-  const getStatusCounts = () => {
+  const getStatusCounts = (initiatives: Initiative[]) => {
     return initiatives.reduce((acc, initiative) => {
       acc[initiative.status] = (acc[initiative.status] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
   };
 
-  const statusCounts = getStatusCounts();
+  const statusCounts = getStatusCounts(activeInitiatives);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -109,16 +147,19 @@ function App() {
                   Admin Panel
                 </button>
               )}
+              <button
+                onClick={() => setShowArchive(!showArchive)}
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
+              >
+                <Archive size={20} />
+                {showArchive ? 'Active Initiatives' : 'View Archive'}
+              </button>
               <button 
                 onClick={() => setShowNewInitiative(true)}
                 className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
               >
                 <PlusCircle size={20} />
                 New Initiative
-              </button>
-              <button className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition">
-                <RefreshCw size={20} />
-                Update Status
               </button>
             </div>
           </div>
@@ -144,44 +185,52 @@ function App() {
       <main className="container mx-auto px-4 py-8">
         {/* Metrics Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <MetricCard
+        <MetricCard
             icon={<Target className="text-blue-600" />}
             title="Total Initiatives"
-            value={initiatives.length}
-            trend={`${initiatives.filter(i => i.status === 'on-track').length} on track`}
+            value={activeInitiatives.length}
+            trend={`${activeInitiatives.filter(i => i.status === 'on-track').length} on track`}
+            onClick={() => setStatusFilter(statusFilter === 'all' ? 'all' : 'all')}
+            active={statusFilter === 'all'}
           />
           <MetricCard
             icon={<BarChart3 className="text-green-600" />}
             title="On Track"
             value={statusCounts['on-track'] || 0}
             trend="Projects in good standing"
+            onClick={() => setStatusFilter(statusFilter === 'on-track' ? 'all' : 'on-track')}
+            active={statusFilter === 'on-track'}
           />
           <MetricCard
             icon={<ListTodo className="text-yellow-600" />}
             title="At Risk"
             value={statusCounts['at-risk'] || 0}
             trend="Need attention"
+            onClick={() => setStatusFilter(statusFilter === 'at-risk' ? 'all' : 'at-risk')}
+            active={statusFilter === 'at-risk'}
           />
           <MetricCard
             icon={<Users className="text-purple-600" />}
             title="Delayed"
             value={statusCounts['delayed'] || 0}
             trend="Requires intervention"
+            onClick={() => setStatusFilter(statusFilter === 'delayed' ? 'all' : 'delayed')}
+            active={statusFilter === 'delayed'}
           />
         </div>
 
-        {/* Progress Overview and Active Initiatives */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+         {/* Progress Overview and Active Initiatives */}
+         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="lg:col-span-1 space-y-8">
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold mb-6">Overall Progress</h2>
-              <ProgressChart />
+              <ProgressChart initiatives={showArchive ? archivedInitiatives : activeInitiatives} />
             </div>
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h2 className="text-xl font-semibold mb-6">Department Overview</h2>
               <div className="space-y-4">
-                {Array.from(new Set(initiatives.map(i => i.department))).map(dept => {
-                  const deptInitiatives = initiatives.filter(i => i.department === dept);
+                {Array.from(new Set((showArchive ? archivedInitiatives : activeInitiatives).map(i => i.department))).map(dept => {
+                  const deptInitiatives = (showArchive ? archivedInitiatives : activeInitiatives).filter(i => i.department === dept);
                   const onTrack = deptInitiatives.filter(i => i.status === 'on-track').length;
                   return (
                     <div key={dept} className="flex items-center justify-between">
@@ -207,22 +256,30 @@ function App() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold">Active Initiatives</h2>
                 <div className="flex gap-2">
-                  <select className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                  <select
+                    className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                    value={departmentFilter}
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                  >
                     <option>All Departments</option>
                     {Array.from(new Set(initiatives.map(i => i.department))).map(dept => (
                       <option key={dept}>{dept}</option>
                     ))}
                   </select>
-                  <select className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm">
-                    <option>All Status</option>
-                    <option>On Track</option>
-                    <option>At Risk</option>
-                    <option>Delayed</option>
+                  <select
+                    className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as Initiative['status'] | 'all')}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="on-track">On Track</option>
+                    <option value="at-risk">At Risk</option>
+                    <option value="delayed">Delayed</option>
                   </select>
                 </div>
               </div>
               <div className="grid gap-4 grid-cols-1 xl:grid-cols-2">
-                {initiatives.map((initiative) => (
+                {filteredInitiatives.map((initiative) => (
                   <InitiativeCard 
                     key={initiative.id} 
                     {...initiative} 

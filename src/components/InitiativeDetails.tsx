@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, AlertCircle, CheckCircle2, Clock, Calendar, Users, MessageSquare, DollarSign } from 'lucide-react';
+import { ArrowLeft, AlertCircle, CheckCircle2, Clock, Calendar, Users, MessageSquare, DollarSign, XCircle } from 'lucide-react';
 import type { Initiative } from '../data/mockData';
 import ObjectiveEditor from './ObjectiveEditor';
 import TimelineEditor from './TimelineEditor';
@@ -14,6 +14,7 @@ interface InitiativeDetailsProps {
   onBack: () => void;
   onUpdate: (initiative: Initiative) => void;
   onAddUpdate: (initiativeId: number, message: string) => void;
+  onArchive: () => void;
   updates: Array<{
     id: number;
     initiative: string;
@@ -28,6 +29,8 @@ const statusConfig = {
   'on-track': { icon: CheckCircle2, className: 'text-green-600 bg-green-50', label: 'On Track' },
   'at-risk': { icon: AlertCircle, className: 'text-yellow-600 bg-yellow-50', label: 'At Risk' },
   'delayed': { icon: Clock, className: 'text-red-600 bg-red-50', label: 'Delayed' },
+  'completed': { icon: CheckCircle2, className: 'text-emerald-600 bg-emerald-50', label: 'Completed' },
+  'canceled': { icon: XCircle, className: 'text-gray-600 bg-gray-50', label: 'Canceled' },
 };
 
 const InitiativeDetails: React.FC<InitiativeDetailsProps> = ({ 
@@ -35,6 +38,7 @@ const InitiativeDetails: React.FC<InitiativeDetailsProps> = ({
   onBack, 
   onUpdate,
   onAddUpdate,
+  onArchive,
   updates 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -44,8 +48,18 @@ const InitiativeDetails: React.FC<InitiativeDetailsProps> = ({
   const budgetProgress = (initiative.budget.spent / initiative.budget.allocated) * 100;
 
   const handleSave = () => {
-    onUpdate(updatedInitiative);
+    const now = new Date().toISOString();
+    const updatedData = {
+      ...updatedInitiative,
+      completedDate: ['completed', 'canceled'].includes(updatedInitiative.status) ? now : undefined
+    };
+    onUpdate(updatedData);
     setIsEditing(false);
+
+    // Add status update message
+    if (updatedData.status !== initiative.status) {
+      onAddUpdate(initiative.id, `Initiative status changed to ${updatedData.status}`);
+    }
   };
 
   const handleUpdateSubmit = (e: React.FormEvent) => {
@@ -68,9 +82,12 @@ const InitiativeDetails: React.FC<InitiativeDetailsProps> = ({
     const status = e.target.value as Initiative['status'];
     setUpdatedInitiative(prev => ({
       ...prev,
-      status
+      status,
+      progress: status === 'completed' ? 100 : prev.progress
     }));
   };
+
+  const isTerminalStatus = ['completed', 'canceled'].includes(updatedInitiative.status);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -89,8 +106,22 @@ const InitiativeDetails: React.FC<InitiativeDetailsProps> = ({
               <div className="text-sm text-white/60 mb-1">Project ID: {updatedInitiative.projectId}</div>
               <h1 className="text-2xl font-bold">{updatedInitiative.title}</h1>
               <p className="text-gray-300">{updatedInitiative.department}</p>
+              {updatedInitiative.completedDate && (
+                <p className="text-sm text-white/60 mt-1">
+                  {updatedInitiative.status === 'completed' ? 'Completed' : 'Canceled'} on{' '}
+                  {new Date(updatedInitiative.completedDate).toLocaleDateString()}
+                </p>
+              )}
             </div>
             <div className="flex gap-4">
+              {!isTerminalStatus && (
+                <button
+                  onClick={onArchive}
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition"
+                >
+                  Archive Initiative
+                </button>
+              )}
               <button
                 onClick={() => isEditing ? handleSave() : setIsEditing(true)}
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition"
@@ -106,6 +137,8 @@ const InitiativeDetails: React.FC<InitiativeDetailsProps> = ({
                   <option value="on-track">On Track</option>
                   <option value="at-risk">At Risk</option>
                   <option value="delayed">Delayed</option>
+                  <option value="completed">Completed</option>
+                  <option value="canceled">Canceled</option>
                 </select>
               ) : (
                 <div className={`px-4 py-2 rounded-lg flex items-center gap-2 ${statusConfig[updatedInitiative.status].className}`}>
@@ -117,6 +150,8 @@ const InitiativeDetails: React.FC<InitiativeDetailsProps> = ({
           </div>
         </div>
       </header>
+
+      
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
