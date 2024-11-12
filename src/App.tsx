@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Archive, BarChart3, ListTodo, PlusCircle, RefreshCw, Settings, Target, Users
+  Archive, BarChart3, ListTodo, MessageSquare, PlusCircle, RefreshCw, Settings, Target, Users
 } from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -27,6 +27,7 @@ function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
   const [showNewInitiative, setShowNewInitiative] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [isAdmin] = useState(true);
   const [selectedInitiative, setSelectedInitiative] = useState<number | null>(null);
   const [initiatives, setInitiatives] = useState(initialInitiatives);
@@ -118,17 +119,29 @@ function App() {
           updates={updates.filter(u => u.initiative === initiative.title)}
         />
       );
-    } else {
-      // If initiative is not found, return a fallback message
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <p className="text-gray-600">Initiative not found. Please try selecting another initiative.</p>
-          <button onClick={handleBackClick} className="ml-4 px-4 py-2 bg-[#500000] text-white rounded">
-            Back to Dashboard
-          </button>
-        </div>
-      );
     }
+  }
+
+  // Render SuggestionsPage if suggestions view is active
+  if (showSuggestions) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <div className="min-h-screen bg-gray-50">
+          <header className="bg-[#500000] text-white sticky top-0 z-50">
+            <div className="container mx-auto px-4 py-6">
+              <button
+                onClick={() => setShowSuggestions(false)}
+                className="flex items-center gap-2 text-white/80 hover:text-white"
+              >
+                <RefreshCw size={20} />
+                Back to Dashboard
+              </button>
+            </div>
+          </header>
+          <SuggestionsPage />
+        </div>
+      </QueryClientProvider>
+    );
   }
 
   const getStatusCounts = (initiatives: Initiative[]) => {
@@ -169,6 +182,13 @@ function App() {
                   {showArchive ? 'Active Initiatives' : 'View Archive'}
                 </button>
                 <button
+                  onClick={() => setShowSuggestions(true)}
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
+                >
+                  <MessageSquare size={20} />
+                  Suggestions
+                </button>
+                <button
                   onClick={() => setShowNewInitiative(true)}
                   className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
                 >
@@ -186,6 +206,7 @@ function App() {
             onClose={() => setShowAdmin(false)}
             initiatives={initiatives}
             metrics={metrics}
+            onInitiativeSelect={handleInitiativeClick}
           />
         )}
         {showNewInitiative && (
@@ -298,6 +319,9 @@ function App() {
                       key={initiative.id}
                       {...initiative}
                       onClick={() => handleInitiativeClick(initiative.id)}
+                      onRestore={
+                        initiative.archived ? () => handleRestoreInitiative(initiative.id) : undefined
+                      }
                     />
                   ))}
                 </div>
@@ -310,9 +334,6 @@ function App() {
             <h2 className="text-xl font-semibold mb-6">Recent Updates</h2>
             <RecentUpdates updates={updates} />
           </div>
-
-          {/* Suggestions Page */}
-          <SuggestionsPage />
         </main>
       </div>
     </QueryClientProvider>
