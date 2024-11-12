@@ -1,20 +1,22 @@
-import {
-    Archive, BarChart3, ListTodo, PlusCircle, RefreshCw, Settings, Target, Users
-} from 'lucide-react';
 import React, { useState } from 'react';
-
+import {
+  Archive, BarChart3, ListTodo, PlusCircle, RefreshCw, Settings, Target, Users
+} from 'lucide-react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import AdminPanel from './components/AdminPanel';
 import InitiativeCard from './components/InitiativeCard';
-import InitiativeDetails from './components/InitiativeDetails';
-import MetricCard from './components/MetricCard';
-import NewInitiativeModal from './components/NewInitiativeModal';
 import ProgressChart from './components/ProgressChart';
+import MetricCard from './components/MetricCard';
 import RecentUpdates from './components/RecentUpdates';
+import AdminPanel from './components/AdminPanel';
+import InitiativeDetails from './components/InitiativeDetails';
+import NewInitiativeModal from './components/NewInitiativeModal';
 import SuggestionsPage from './components/suggestions/SuggestionsPage';
+
 import {
-    initiatives as initialInitiatives, metrics, updates as initialUpdates
+  initiatives as initialInitiatives,
+  metrics,
+  updates as initialUpdates,
 } from './data/mockData';
 
 import type { Initiative } from './data/mockData';
@@ -104,7 +106,7 @@ function App() {
   // Render InitiativeDetails if an initiative is selected
   if (selectedInitiative !== null) {
     const initiative = initiatives.find(i => i.id === selectedInitiative);
-    
+
     if (initiative) {
       return (
         <InitiativeDetails
@@ -139,181 +141,181 @@ function App() {
   const statusCounts = getStatusCounts(activeInitiatives);
 
   return (
-    <QueryClientProvider client={QueryClient}>
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#500000] text-white sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold">Strategic Initiatives Dashboard</h1>
-              <p className="text-gray-300">Texas A&M Human Resources</p>
-            </div>
-            <div className="flex gap-4">
-              {isAdmin && (
-                <button 
-                  onClick={() => setShowAdmin(!showAdmin)}
+    <QueryClientProvider client={queryClient}>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-[#500000] text-white sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Strategic Initiatives Dashboard</h1>
+                <p className="text-gray-300">Texas A&M Human Resources</p>
+              </div>
+              <div className="flex gap-4">
+                {isAdmin && (
+                  <button
+                    onClick={() => setShowAdmin(!showAdmin)}
+                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
+                  >
+                    <Settings size={20} />
+                    Admin Panel
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowArchive(!showArchive)}
                   className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
                 >
-                  <Settings size={20} />
-                  Admin Panel
+                  <Archive size={20} />
+                  {showArchive ? 'Active Initiatives' : 'View Archive'}
                 </button>
-              )}
-              <button
-                onClick={() => setShowArchive(!showArchive)}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
-              >
-                <Archive size={20} />
-                {showArchive ? 'Active Initiatives' : 'View Archive'}
-              </button>
-              <button 
-                onClick={() => setShowNewInitiative(true)}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
-              >
-                <PlusCircle size={20} />
-                New Initiative
-              </button>
+                <button
+                  onClick={() => setShowNewInitiative(true)}
+                  className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg transition"
+                >
+                  <PlusCircle size={20} />
+                  New Initiative
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Modals */}
-      {showAdmin && (
-        <AdminPanel 
-          onClose={() => setShowAdmin(false)} 
-          initiatives={initiatives}
-          metrics={metrics}
-        />
-      )}
-      {showNewInitiative && (
-        <NewInitiativeModal
-          onClose={() => setShowNewInitiative(false)}
-          onSubmit={handleNewInitiative}
-        />
-      )}
+        {/* Modals */}
+        {showAdmin && (
+          <AdminPanel
+            onClose={() => setShowAdmin(false)}
+            initiatives={initiatives}
+            metrics={metrics}
+          />
+        )}
+        {showNewInitiative && (
+          <NewInitiativeModal
+            onClose={() => setShowNewInitiative(false)}
+            onSubmit={handleNewInitiative}
+          />
+        )}
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        {/* Metrics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <MetricCard
-            icon={<Target className="text-blue-600" />}
-            title="Total Initiatives"
-            value={activeInitiatives.length}
-            trend={`${activeInitiatives.filter(i => i.status === 'on-track').length} on track`}
-            onClick={() => setStatusFilter(statusFilter === 'all' ? 'all' : 'all')}
-            active={statusFilter === 'all'}
-          />
-          <MetricCard
-            icon={<BarChart3 className="text-green-600" />}
-            title="On Track"
-            value={statusCounts['on-track'] || 0}
-            trend="Projects in good standing"
-            onClick={() => setStatusFilter(statusFilter === 'on-track' ? 'all' : 'on-track')}
-            active={statusFilter === 'on-track'}
-          />
-          <MetricCard
-            icon={<ListTodo className="text-yellow-600" />}
-            title="At Risk"
-            value={statusCounts['at-risk'] || 0}
-            trend="Need attention"
-            onClick={() => setStatusFilter(statusFilter === 'at-risk' ? 'all' : 'at-risk')}
-            active={statusFilter === 'at-risk'}
-          />
-          <MetricCard
-            icon={<Users className="text-purple-600" />}
-            title="Delayed"
-            value={statusCounts['delayed'] || 0}
-            trend="Requires intervention"
-            onClick={() => setStatusFilter(statusFilter === 'delayed' ? 'all' : 'delayed')}
-            active={statusFilter === 'delayed'}
-          />
-        </div>
+        {/* Main Content */}
+        <main className="container mx-auto px-4 py-8">
+          {/* Metrics Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <MetricCard
+              icon={<Target className="text-blue-600" />}
+              title="Total Initiatives"
+              value={activeInitiatives.length}
+              trend={`${activeInitiatives.filter(i => i.status === 'on-track').length} on track`}
+              onClick={() => setStatusFilter(statusFilter === 'all' ? 'all' : 'all')}
+              active={statusFilter === 'all'}
+            />
+            <MetricCard
+              icon={<BarChart3 className="text-green-600" />}
+              title="On Track"
+              value={statusCounts['on-track'] || 0}
+              trend="Projects in good standing"
+              onClick={() => setStatusFilter(statusFilter === 'on-track' ? 'all' : 'on-track')}
+              active={statusFilter === 'on-track'}
+            />
+            <MetricCard
+              icon={<ListTodo className="text-yellow-600" />}
+              title="At Risk"
+              value={statusCounts['at-risk'] || 0}
+              trend="Need attention"
+              onClick={() => setStatusFilter(statusFilter === 'at-risk' ? 'all' : 'at-risk')}
+              active={statusFilter === 'at-risk'}
+            />
+            <MetricCard
+              icon={<Users className="text-purple-600" />}
+              title="Delayed"
+              value={statusCounts['delayed'] || 0}
+              trend="Requires intervention"
+              onClick={() => setStatusFilter(statusFilter === 'delayed' ? 'all' : 'delayed')}
+              active={statusFilter === 'delayed'}
+            />
+          </div>
 
-         {/* Progress Overview and Active Initiatives */}
-         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-          <div className="lg:col-span-1 space-y-8">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold mb-6">Overall Progress</h2>
-              <ProgressChart initiatives={showArchive ? archivedInitiatives : activeInitiatives} />
-            </div>
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold mb-6">Department Overview</h2>
-              <div className="space-y-4">
-                {Array.from(new Set((showArchive ? archivedInitiatives : activeInitiatives).map(i => i.department))).map(dept => {
-                  const deptInitiatives = (showArchive ? archivedInitiatives : activeInitiatives).filter(i => i.department === dept);
-                  const onTrack = deptInitiatives.filter(i => i.status === 'on-track').length;
-                  return (
-                    <div key={dept} className="flex items-center justify-between">
-                      <span className="font-medium">{dept}</span>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-600">{deptInitiatives.length} initiatives</span>
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-green-600 rounded-full h-2"
-                            style={{ width: `${(onTrack / deptInitiatives.length) * 100}%` }}
-                          />
+          {/* Progress Overview and Active Initiatives */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <div className="lg:col-span-1 space-y-8">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-6">Overall Progress</h2>
+                <ProgressChart initiatives={showArchive ? archivedInitiatives : activeInitiatives} />
+              </div>
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <h2 className="text-xl font-semibold mb-6">Department Overview</h2>
+                <div className="space-y-4">
+                  {Array.from(new Set((showArchive ? archivedInitiatives : activeInitiatives).map(i => i.department))).map(dept => {
+                    const deptInitiatives = (showArchive ? archivedInitiatives : activeInitiatives).filter(i => i.department === dept);
+                    const onTrack = deptInitiatives.filter(i => i.status === 'on-track').length;
+                    return (
+                      <div key={dept} className="flex items-center justify-between">
+                        <span className="font-medium">{dept}</span>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm text-gray-600">{deptInitiatives.length} initiatives</span>
+                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-green-600 rounded-full h-2"
+                              style={{ width: `${(onTrack / deptInitiatives.length) * 100}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold">Active Initiatives</h2>
-                <div className="flex gap-2">
-                  <select
-                    className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                  >
-                    <option>All Departments</option>
-                    {Array.from(new Set(initiatives.map(i => i.department))).map(dept => (
-                      <option key={dept}>{dept}</option>
-                    ))}
-                  </select>
-                  <select
-                    className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value as Initiative['status'] | 'all')}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="on-track">On Track</option>
-                    <option value="at-risk">At Risk</option>
-                    <option value="delayed">Delayed</option>
-                  </select>
+                    );
+                  })}
                 </div>
               </div>
-              <div className="grid gap-4 grid-cols-1 xl:grid-cols-2">
-                {filteredInitiatives.map((initiative) => (
-                  <InitiativeCard 
-                    key={initiative.id} 
-                    {...initiative} 
-                    onClick={() => handleInitiativeClick(initiative.id)}
-                  />
-                ))}
+            </div>
+
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-semibold">Active Initiatives</h2>
+                  <div className="flex gap-2">
+                    <select
+                      className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                      value={departmentFilter}
+                      onChange={(e) => setDepartmentFilter(e.target.value)}
+                    >
+                      <option>All Departments</option>
+                      {Array.from(new Set(initiatives.map(i => i.department))).map(dept => (
+                        <option key={dept}>{dept}</option>
+                      ))}
+                    </select>
+                    <select
+                      className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value as Initiative['status'] | 'all')}
+                    >
+                      <option value="all">All Status</option>
+                      <option value="on-track">On Track</option>
+                      <option value="at-risk">At Risk</option>
+                      <option value="delayed">Delayed</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid gap-4 grid-cols-1 xl:grid-cols-2">
+                  {filteredInitiatives.map((initiative) => (
+                    <InitiativeCard
+                      key={initiative.id}
+                      {...initiative}
+                      onClick={() => handleInitiativeClick(initiative.id)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Recent Updates */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-xl font-semibold mb-6">Recent Updates</h2>
-          <RecentUpdates updates={updates} />
-        </div>
-    
-    {/* Suggestions Page */}
-      <SuggestionsPage />
-      </main>
-    </div>
-  </QueryClientProvider>
+          {/* Recent Updates */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-xl font-semibold mb-6">Recent Updates</h2>
+            <RecentUpdates updates={updates} />
+          </div>
+
+          {/* Suggestions Page */}
+          <SuggestionsPage />
+        </main>
+      </div>
+    </QueryClientProvider>
   );
 }
 
