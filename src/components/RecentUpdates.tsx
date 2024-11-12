@@ -1,5 +1,5 @@
-import React from 'react';
 import { Clock, MessageSquare } from 'lucide-react';
+import React from 'react';
 
 interface Update {
   id: number;

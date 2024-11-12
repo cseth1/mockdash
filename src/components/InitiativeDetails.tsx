@@ -1,14 +1,17 @@
+import {
+    AlertCircle, ArrowLeft, Calendar, CheckCircle2, Clock, DollarSign, MessageSquare, Users, XCircle
+} from 'lucide-react';
 import React, { useState } from 'react';
-import { ArrowLeft, AlertCircle, CheckCircle2, Clock, Calendar, Users, MessageSquare, DollarSign, XCircle } from 'lucide-react';
-import type { Initiative } from '../data/mockData';
-import ObjectiveEditor from './ObjectiveEditor';
-import TimelineEditor from './TimelineEditor';
-import KPISection from './KPISection';
-import ResourceSection from './ResourceSection';
-import TimeTrackingSection from './TimeTrackingSection';
+
 import DocumentationSection from './DocumentationSection';
 import IntegrationGuide from './IntegrationGuide';
+import KPISection from './KPISection';
+import ObjectiveEditor from './ObjectiveEditor';
+import ResourceSection from './ResourceSection';
+import TimelineEditor from './TimelineEditor';
+import TimeTrackingSection from './TimeTrackingSection';
 
+import type { Initiative } from '../data/mockData';
 interface InitiativeDetailsProps {
   initiative: Initiative;
   onBack: () => void;

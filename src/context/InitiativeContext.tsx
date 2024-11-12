@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useReducer } from 'react';
+
 import type { Initiative, KPI } from '../data/mockData';
 
 interface InitiativeState {

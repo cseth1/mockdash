@@ -1,5 +1,5 @@
-import React from 'react';
 import { ListChecks, PlusCircle, X } from 'lucide-react';
+import React from 'react';
 
 interface ObjectiveEditorProps {
   objectives: string[];

@@ -1,14 +1,25 @@
+import {
+    Archive, BarChart3, ListTodo, PlusCircle, RefreshCw, Settings, Target, Users
+} from 'lucide-react';
 import React, { useState } from 'react';
-import { BarChart3, ListTodo, PlusCircle, Target, Users, Settings, Archive, RefreshCw } from 'lucide-react';
-import InitiativeCard from './components/InitiativeCard';
-import ProgressChart from './components/ProgressChart';
-import MetricCard from './components/MetricCard';
-import RecentUpdates from './components/RecentUpdates';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import AdminPanel from './components/AdminPanel';
+import InitiativeCard from './components/InitiativeCard';
 import InitiativeDetails from './components/InitiativeDetails';
+import MetricCard from './components/MetricCard';
 import NewInitiativeModal from './components/NewInitiativeModal';
-import { initiatives as initialInitiatives, metrics, updates as initialUpdates } from './data/mockData';
+import ProgressChart from './components/ProgressChart';
+import RecentUpdates from './components/RecentUpdates';
+import SuggestionsPage from './components/suggestions/SuggestionsPage';
+import {
+    initiatives as initialInitiatives, metrics, updates as initialUpdates
+} from './data/mockData';
+
 import type { Initiative } from './data/mockData';
+
+const queryClient = new QueryClient();
 
 function App() {
   const [showAdmin, setShowAdmin] = useState(false);
@@ -128,6 +139,7 @@ function App() {
   const statusCounts = getStatusCounts(activeInitiatives);
 
   return (
+    <QueryClientProvider client={QueryClient}>
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-[#500000] text-white sticky top-0 z-50">
@@ -296,8 +308,12 @@ function App() {
           <h2 className="text-xl font-semibold mb-6">Recent Updates</h2>
           <RecentUpdates updates={updates} />
         </div>
+    
+    {/* Suggestions Page */}
+      <SuggestionsPage />
       </main>
     </div>
+  </QueryClientProvider>
   );
 }
 

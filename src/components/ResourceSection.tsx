@@ -1,5 +1,5 @@
+import { Clock, DollarSign, Users } from 'lucide-react';
 import React from 'react';
-import { Users, DollarSign, Clock } from 'lucide-react';
 
 interface Resource {
   type: 'human' | 'financial' | 'time';
