@@ -1,5 +1,5 @@
-import React from 'react';
 import { Puzzle } from 'lucide-react';
+import React from 'react';
 
 interface Integration {
   platform: string;

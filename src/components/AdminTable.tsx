@@ -1,5 +1,6 @@
+import { AlertCircle, ArrowUpDown, CheckCircle2, Clock } from 'lucide-react';
 import React from 'react';
-import { ArrowUpDown, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+
 import type { Initiative } from '../data/mockData';
 
 interface AdminTableProps {

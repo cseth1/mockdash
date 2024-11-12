@@ -1,5 +1,6 @@
-import React from 'react';
 import { PlusCircle, X } from 'lucide-react';
+import React from 'react';
+
 import TimelinePhase from './TimelinePhase';
 
 interface Phase {

@@ -1,8 +1,10 @@
-import React, { useState, useMemo } from 'react';
-import { X, BarChart3, ListTodo, Target, Users, Search, Filter, AlertTriangle } from 'lucide-react';
-import MetricCard from './MetricCard';
-import AdminTable from './AdminTable';
+import { AlertTriangle, BarChart3, Filter, ListTodo, Search, Target, Users, X } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+
 import { useInitiatives } from '../context/InitiativeContext';
+import AdminTable from './AdminTable';
+import MetricCard from './MetricCard';
+
 import type { Initiative } from '../data/mockData';
 
 interface AdminPanelProps {

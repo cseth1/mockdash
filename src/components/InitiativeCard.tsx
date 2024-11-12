@@ -1,5 +1,5 @@
-import React from 'react';
 import { AlertCircle, CheckCircle2, Clock, RotateCcw, XCircle } from 'lucide-react';
+import React from 'react';
 
 interface InitiativeCardProps {
   id: number;

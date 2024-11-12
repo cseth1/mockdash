@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import React, { useState } from 'react';
+
 import type { Initiative } from '../data/mockData';
 
 interface NewInitiativeModalProps {

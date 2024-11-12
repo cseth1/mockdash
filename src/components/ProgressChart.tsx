@@ -1,4 +1,5 @@
 import React from 'react';
+
 import type { Initiative } from '../data/mockData';
 
 interface ProgressChartProps {
