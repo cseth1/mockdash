@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { AlertCircle, Info, Lock, User, X } from 'lucide-react';
 import React, { useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 
@@ -12,12 +12,14 @@ const NewSuggestionModal: React.FC<NewSuggestionModalProps> = ({ onClose }) => {
     title: '',
     description: '',
     department: '',
+    category: '',
+    priority: 'medium',
     tags: [] as string[],
+    isAnonymous: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     onClose();
   };
@@ -33,6 +35,13 @@ const NewSuggestionModal: React.FC<NewSuggestionModalProps> = ({ onClose }) => {
 
   const availableTags = ['Policy', 'Benefits', 'Training', 'Culture', 'Technology', 'Workplace'];
   const departments = ['HR Operations', 'Talent Management', 'Benefits Administration', 'Employee Relations'];
+  const categories = ['Policy', 'Training', 'Benefits', 'Culture', 'Technology'];
+  const priorities = [
+    { value: 'low', label: 'Low', description: 'Nice to have, not time-sensitive' },
+    { value: 'medium', label: 'Medium', description: 'Important but not urgent' },
+    { value: 'high', label: 'High', description: 'Urgent, needs attention soon' },
+    { value: 'urgent', label: 'Urgent', description: 'Critical, requires immediate attention' },
+  ];
 
   return (
     <AnimatePresence>
@@ -50,7 +59,7 @@ const NewSuggestionModal: React.FC<NewSuggestionModalProps> = ({ onClose }) => {
         >
           <div className="p-6 border-b sticky top-0 bg-white z-10">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">New Suggestion</h2>
+              <h2 className="text-xl font-semibold">Share Your Voice</h2>
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded-lg transition"
@@ -61,6 +70,57 @@ const NewSuggestionModal: React.FC<NewSuggestionModalProps> = ({ onClose }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+              <Info className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+              <div>
+                <p className="text-blue-800 font-medium">Submission Guidelines</p>
+                <ul className="mt-2 text-sm text-blue-700 space-y-1">
+                  <li>Be specific and constructive in your suggestion</li>
+                  <li>Provide context and potential benefits</li>
+                  <li>Avoid personal grievances or naming individuals</li>
+                  <li>Anonymous submissions have limited follow-up options</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, isAnonymous: false }))}
+                className={`flex-1 p-4 rounded-lg border-2 ${
+                  !formData.isAnonymous
+                    ? 'border-[#500000] bg-[#500000]/5'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <User size={24} className={!formData.isAnonymous ? 'text-[#500000]' : 'text-gray-400'} />
+                <div className="mt-2 font-medium">Identified</div>
+                <div className="text-sm text-gray-600">Submit with your name</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, isAnonymous: true }))}
+                className={`flex-1 p-4 rounded-lg border-2 ${
+                  formData.isAnonymous
+                    ? 'border-[#500000] bg-[#500000]/5'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <Lock size={24} className={formData.isAnonymous ? 'text-[#500000]' : 'text-gray-400'} />
+                <div className="mt-2 font-medium">Anonymous</div>
+                <div className="text-sm text-gray-600">Submit privately</div>
+              </button>
+            </div>
+
+            {formData.isAnonymous && (
+              <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                <AlertCircle className="text-yellow-600 flex-shrink-0 mt-0.5" size={16} />
+                <p className="text-yellow-700">
+                  Anonymous submissions cannot receive direct feedback or updates. Consider submitting identified if you'd like to be involved in the implementation process.
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Title
@@ -89,21 +149,63 @@ const NewSuggestionModal: React.FC<NewSuggestionModalProps> = ({ onClose }) => {
               />
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department
+                </label>
+                <select
+                  required
+                  value={formData.department}
+                  onChange={e => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#500000] focus:border-[#500000]"
+                >
+                  <option value="">Select a department</option>
+                  {departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <select
+                  required
+                  value={formData.category}
+                  onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#500000] focus:border-[#500000]"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Department
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Priority Level
               </label>
-              <select
-                required
-                value={formData.department}
-                onChange={e => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#500000] focus:border-[#500000]"
-              >
-                <option value="">Select a department</option>
-                {departments.map(dept => (
-                  <option key={dept} value={dept}>{dept}</option>
+              <div className="grid grid-cols-2 gap-2">
+                {priorities.map(({ value, label, description }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, priority: value }))}
+                    className={`p-3 rounded-lg border-2 text-left ${
+                      formData.priority === value
+                        ? 'border-[#500000] bg-[#500000]/5'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="font-medium">{label}</div>
+                    <div className="text-sm text-gray-600">{description}</div>
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div>

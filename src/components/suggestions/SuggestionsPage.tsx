@@ -1,9 +1,8 @@
 import { formatDistanceToNow } from 'date-fns';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowDown, ArrowUp, Clock, MessageSquare, TrendingUp } from 'lucide-react';
+import { ArrowDown, ArrowUp, Clock, MessageSquare, TrendingUp, AlertCircle, UserCircle2 } from 'lucide-react';
 import React, { useState } from 'react';
 import { useInView } from 'react-intersection-observer';
-
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 
 import { cn } from '../../utils/cn';
@@ -14,7 +13,7 @@ interface Suggestion {
   id: number;
   title: string;
   description: string;
-  author: {
+  author?: {
     name: string;
     avatar: string;
   };
@@ -22,21 +21,25 @@ interface Suggestion {
   upvotes: number;
   downvotes: number;
   commentCount: number;
-  department: string;
+  isAnonymous: boolean;
+  needsMoreInfo: boolean;
+  priority: 'low' | 'medium' | 'high';
   status: 'new' | 'under-review' | 'planned' | 'in-progress' | 'completed' | 'declined';
   tags: string[];
+  implementationDate?: string;
+  assignedTo?: string[];
+  reviewers?: string[];
 }
 
 const ITEMS_PER_PAGE = 10;
 
 const mockFetchSuggestions = async (page: number, sortBy: string) => {
-  // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   const suggestions: Suggestion[] = Array.from({ length: ITEMS_PER_PAGE }, (_, i) => ({
     id: page * ITEMS_PER_PAGE + i,
     title: `Suggestion ${page * ITEMS_PER_PAGE + i + 1}`,
-    description: 'This is a mock suggestion description that demonstrates how the content would look in the card.',
+    description: 'This is a mock suggestion description for the card layout.',
     author: {
       name: 'John Doe',
       avatar: `https://ui-avatars.com/api/?name=John+Doe&background=500000&color=fff`,
@@ -45,10 +48,10 @@ const mockFetchSuggestions = async (page: number, sortBy: string) => {
     upvotes: Math.floor(Math.random() * 100),
     downvotes: Math.floor(Math.random() * 20),
     commentCount: Math.floor(Math.random() * 50),
-    department: 'HR Operations',
-    status: ['new', 'under-review', 'planned', 'in-progress', 'completed', 'declined'][
-      Math.floor(Math.random() * 6)
-    ] as Suggestion['status'],
+    isAnonymous: Math.random() > 0.5,
+    needsMoreInfo: Math.random() > 0.8,
+    priority: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)] as Suggestion['priority'],
+    status: ['new', 'under-review', 'planned', 'in-progress', 'completed', 'declined'][Math.floor(Math.random() * 6)] as Suggestion['status'],
     tags: ['Policy', 'Benefits', 'Training'].sort(() => Math.random() - 0.5).slice(0, 2),
   }));
 
@@ -62,6 +65,7 @@ const SuggestionsPage: React.FC = () => {
   const [showNewSuggestion, setShowNewSuggestion] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'recent' | 'top'>('recent');
+  const [filters, setFilters] = useState({ status: 'all', category: 'all', priority: 'all' });
   const { ref, inView } = useInView();
   const queryClient = useQueryClient();
 
@@ -70,11 +74,10 @@ const SuggestionsPage: React.FC = () => {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    status,
   } = useInfiniteQuery({
     queryKey: ['suggestions', sortBy],
     queryFn: ({ pageParam = 0 }: { pageParam: number }) => mockFetchSuggestions(pageParam, sortBy),
-    getNextPageParam: (lastPage: { nextPage: number | null }, pages: Array<any>) => lastPage.nextPage,
+    getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,
   });
 
@@ -85,7 +88,6 @@ const SuggestionsPage: React.FC = () => {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleVote = async (id: number, type: 'up' | 'down') => {
-    // Optimistic update
     queryClient.setQueryData(['suggestions', sortBy], (oldData: any) => ({
       pages: oldData.pages.map((page: any) => ({
         ...page,
@@ -102,17 +104,22 @@ const SuggestionsPage: React.FC = () => {
       pageParams: oldData.pageParams,
     }));
 
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
   };
 
-  const statusColors = {
-    'new': 'bg-blue-100 text-blue-700',
-    'under-review': 'bg-yellow-100 text-yellow-700',
-    'planned': 'bg-purple-100 text-purple-700',
-    'in-progress': 'bg-green-100 text-green-700',
-    'completed': 'bg-gray-100 text-gray-700',
-    'declined': 'bg-red-100 text-red-700',
+  const statusConfig = {
+    'new': { label: 'New', className: 'bg-blue-100 text-blue-700' },
+    'under-review': { label: 'Under Review', className: 'bg-yellow-100 text-yellow-700' },
+    'planned': { label: 'Planned', className: 'bg-purple-100 text-purple-700' },
+    'in-progress': { label: 'In Progress', className: 'bg-green-100 text-green-700' },
+    'completed': { label: 'Completed', className: 'bg-gray-100 text-gray-700' },
+    'declined': { label: 'Declined', className: 'bg-red-100 text-red-700' },
+  };
+
+  const priorityConfig = {
+    'low': { label: 'Low Priority', className: 'bg-green-100 text-green-700' },
+    'medium': { label: 'Medium Priority', className: 'bg-yellow-100 text-yellow-700' },
+    'high': { label: 'High Priority', className: 'bg-red-100 text-red-700' },
   };
 
   return (
@@ -121,7 +128,40 @@ const SuggestionsPage: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Suggestions</h1>
           <div className="flex gap-4">
-            <div className="flex rounded-lg border bg-white">
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+              className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#500000]"
+            >
+              <option value="all">All Statuses</option>
+              {Object.entries(statusConfig).map(([value, { label }]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <select
+                value={filters.category}
+                onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
+                className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#500000]"
+              >
+                <option value="all">All Categories</option>
+                <option value="Policy">Policy</option>
+                <option value="Training">Training</option>
+                <option value="Benefits">Benefits</option>
+                <option value="Culture">Culture</option>
+                <option value="Technology">Technology</option>
+              </select>
+              <select
+                value={filters.priority}
+                onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
+                className="border rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#500000]"
+              >
+                <option value="all">All Priorities</option>
+                {Object.entries(priorityConfig).map(([value, { label }]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex rounded-lg border">
               <button
                 onClick={() => setSortBy('recent')}
                 className={cn(
@@ -143,12 +183,6 @@ const SuggestionsPage: React.FC = () => {
                 Top
               </button>
             </div>
-            <button
-              onClick={() => setShowNewSuggestion(true)}
-              className="px-4 py-2 bg-[#500000] text-white rounded-lg hover:bg-[#400000] transition"
-            >
-              New Suggestion
-            </button>
           </div>
         </div>
 
@@ -186,32 +220,57 @@ const SuggestionsPage: React.FC = () => {
                         <div className="flex-grow">
                           <div className="flex items-start justify-between gap-4">
                             <div>
-                              <h2 className="text-lg font-semibold text-gray-900">
-                                {suggestion.title}
-                              </h2>
+                              <div className="flex items-center gap-2">
+                                <h2 className="text-lg font-semibold text-gray-900">
+                                  {suggestion.title}
+                                </h2>
+                                {suggestion.needsMoreInfo && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs">
+                                    <AlertCircle size={12} />
+                                    Needs More Info
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-2 mt-1">
-                                <img
-                                  src={suggestion.author.avatar}
-                                  alt={suggestion.author.name}
-                                  className="w-6 h-6 rounded-full"
-                                />
-                                <span className="text-sm text-gray-600">
-                                  {suggestion.author.name}
-                                </span>
+                                {suggestion.isAnonymous ? (
+                                  <div className="flex items-center gap-1 text-gray-500">
+                                    <UserCircle2 size={16} />
+                                    <span>Anonymous</span>
+                                  </div>
+                                ) : suggestion.author && (
+                                  <>
+                                    <img
+                                      src={suggestion.author.avatar}
+                                      alt={suggestion.author.name}
+                                      className="w-6 h-6 rounded-full"
+                                    />
+                                    <span className="text-sm text-gray-600">
+                                      {suggestion.author.name}
+                                    </span>
+                                  </>
+                                )}
                                 <span className="text-sm text-gray-400">
                                   {formatDistanceToNow(new Date(suggestion.createdAt), { addSuffix: true })}
                                 </span>
                               </div>
                             </div>
-                            <div className={cn(
-                              'px-3 py-1 rounded-full text-sm',
-                              statusColors[suggestion.status]
-                            )}>
-                              {suggestion.status.replace('-', ' ')}
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                'px-3 py-1 rounded-full text-sm',
+                                priorityConfig[suggestion.priority].className
+                              )}>
+                                {priorityConfig[suggestion.priority].label}
+                              </span>
+                              <span className={cn(
+                                'px-3 py-1 rounded-full text-sm',
+                                statusConfig[suggestion.status].className
+                              )}>
+                                {statusConfig[suggestion.status].label}
+                              </span>
                             </div>
                           </div>
                           <p className="mt-4 text-gray-600">{suggestion.description}</p>
-                          <div className="mt-4 flex items-center gap-4">
+                          <div className="mt-4 flex flex-wrap items-center gap-4">
                             <div className="flex gap-2">
                               {suggestion.tags.map(tag => (
                                 <span
@@ -222,6 +281,12 @@ const SuggestionsPage: React.FC = () => {
                                 </span>
                               ))}
                             </div>
+                            {suggestion.implementationDate && (
+                              <span className="text-sm text-gray-600 flex items-center gap-1">
+                                <Clock size={14} />
+                                Implementation: {new Date(suggestion.implementationDate).toLocaleDateString()}
+                              </span>
+                            )}
                             <button
                               onClick={() => setSelectedSuggestion(
                                 selectedSuggestion === suggestion.id ? null : suggestion.id
@@ -232,12 +297,51 @@ const SuggestionsPage: React.FC = () => {
                               {suggestion.commentCount} Comments
                             </button>
                           </div>
+                          {(suggestion.assignedTo || suggestion.reviewers) && (
+                            <div className="mt-4 pt-4 border-t flex gap-6">
+                              {suggestion.assignedTo && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-500">Assigned to:</span>
+                                  <div className="flex -space-x-2">
+                                    {suggestion.assignedTo.map((person, index) => (
+                                      <img
+                                        key={index}
+                                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(person)}&background=500000&color=fff`}
+                                        alt={person}
+                                        title={person}
+                                        className="w-6 h-6 rounded-full border-2 border-white"
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {suggestion.reviewers && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm text-gray-500">Reviewers:</span>
+                                  <div className="flex -space-x-2">
+                                    {suggestion.reviewers.map((person, index) => (
+                                      <img
+                                        key={index}
+                                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(person)}&background=500000&color=fff`}
+                                        alt={person}
+                                        title={person}
+                                        className="w-6 h-6 rounded-full border-2 border-white"
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
                     {selectedSuggestion === suggestion.id && (
                       <div className="border-t">
-                        <SuggestionComments suggestionId={suggestion.id} />
+                        <SuggestionComments
+                          suggestionId={suggestion.id}
+                          isLocked={suggestion.status === 'under-review'}
+                        />
                       </div>
                     )}
                   </motion.div>
@@ -254,8 +358,6 @@ const SuggestionsPage: React.FC = () => {
         )}
 
         <div ref={ref} className="h-10" />
-      </div>
-
       {showNewSuggestion && (
         <NewSuggestionModal onClose={() => setShowNewSuggestion(false)} />
       )}
