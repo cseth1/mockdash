@@ -183,6 +183,12 @@ const SuggestionsPage: React.FC = () => {
                 Top
               </button>
             </div>
+            <button
+              onClick={() => setShowNewSuggestion(true)}
+              className="px-4 py-2 bg-[#500000] text-white rounded-lg hover:bg-[#400000] transition"
+            >
+              New Suggestion
+            </button>
           </div>
         </div>
 
