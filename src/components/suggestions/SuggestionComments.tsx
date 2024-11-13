@@ -1,5 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
-import { MessageSquare, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { AlertCircle, Lock, MessageSquare, ThumbsDown, ThumbsUp } from 'lucide-react';
 import React, { useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 
@@ -16,19 +16,23 @@ interface Comment {
   likes: number;
   dislikes: number;
   replies: Comment[];
+  isOfficial?: boolean;
+  needsInfo?: boolean;
 }
 
 interface SuggestionCommentsProps {
   suggestionId: number;
+  isLocked?: boolean;
 }
 
 const mockFetchComments = async (suggestionId: number): Promise<Comment[]> => {
-  // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 1000));
 
   const generateComment = (depth = 0): Comment => ({
     id: Math.random(),
-    content: 'This is a mock comment that demonstrates how nested comments would look in the thread.',
+    content: depth === 0 && Math.random() > 0.7
+      ? 'Could you please provide more specific examples or data to support this suggestion?'
+      : 'This is a thoughtful comment that contributes to the discussion.',
     author: {
       name: 'Jane Smith',
       avatar: `https://ui-avatars.com/api/?name=Jane+Smith&background=500000&color=fff`,
@@ -37,18 +41,27 @@ const mockFetchComments = async (suggestionId: number): Promise<Comment[]> => {
     likes: Math.floor(Math.random() * 50),
     dislikes: Math.floor(Math.random() * 10),
     replies: depth < 2 ? Array.from({ length: Math.floor(Math.random() * 3) }, () => generateComment(depth + 1)) : [],
+    isOfficial: depth === 0 && Math.random() > 0.8,
+    needsInfo: depth === 0 && Math.random() > 0.8,
   });
 
   return Array.from({ length: 5 }, () => generateComment());
 };
 
-const CommentComponent: React.FC<{ comment: Comment; depth?: number }> = ({ comment, depth = 0 }) => {
+const CommentComponent: React.FC<{
+  comment: Comment;
+  depth?: number;
+  isLocked?: boolean;
+}> = ({
+  comment,
+  depth = 0,
+  isLocked = false
+}) => {
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState('');
 
   const handleReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     setIsReplying(false);
     setReplyContent('');
@@ -65,11 +78,24 @@ const CommentComponent: React.FC<{ comment: Comment; depth?: number }> = ({ comm
         <div className="flex-grow">
           <div className="flex items-center gap-2">
             <span className="font-medium">{comment.author.name}</span>
+            {comment.isOfficial && (
+              <span className="px-2 py-0.5 bg-[#500000] text-white text-xs rounded-full">
+                Official Response
+              </span>
+            )}
             <span className="text-sm text-gray-500">
               {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
             </span>
           </div>
-          <p className="mt-1 text-gray-600">{comment.content}</p>
+          <div className="mt-1">
+            {comment.needsInfo && (
+              <div className="mb-2 flex items-center gap-2 text-yellow-600 bg-yellow-50 px-3 py-2 rounded-lg">
+                <AlertCircle size={16} />
+                <span className="text-sm">Additional information requested</span>
+              </div>
+            )}
+            <p className="text-gray-600">{comment.content}</p>
+          </div>
           <div className="flex items-center gap-4 mt-2">
             <button className="flex items-center gap-1 text-gray-500 hover:text-[#500000]">
               <ThumbsUp size={14} />
@@ -79,16 +105,18 @@ const CommentComponent: React.FC<{ comment: Comment; depth?: number }> = ({ comm
               <ThumbsDown size={14} />
               {comment.dislikes}
             </button>
-            <button
-              onClick={() => setIsReplying(!isReplying)}
-              className="flex items-center gap-1 text-gray-500 hover:text-[#500000]"
-            >
-              <MessageSquare size={14} />
-              Reply
-            </button>
+            {!isLocked && (
+              <button
+                onClick={() => setIsReplying(!isReplying)}
+                className="flex items-center gap-1 text-gray-500 hover:text-[#500000]"
+              >
+                <MessageSquare size={14} />
+                Reply
+              </button>
+            )}
           </div>
 
-          {isReplying && (
+          {isReplying && !isLocked && (
             <form onSubmit={handleReply} className="mt-4">
               <TextareaAutosize
                 value={replyContent}
@@ -116,7 +144,12 @@ const CommentComponent: React.FC<{ comment: Comment; depth?: number }> = ({ comm
           )}
 
           {comment.replies.map(reply => (
-            <CommentComponent key={reply.id} comment={reply} depth={depth + 1} />
+            <CommentComponent
+              key={reply.id}
+              comment={reply}
+              depth={depth + 1}
+              isLocked={isLocked}
+            />
           ))}
         </div>
       </div>
@@ -124,7 +157,10 @@ const CommentComponent: React.FC<{ comment: Comment; depth?: number }> = ({ comm
   );
 };
 
-const SuggestionComments: React.FC<SuggestionCommentsProps> = ({ suggestionId }) => {
+const SuggestionComments: React.FC<SuggestionCommentsProps> = ({
+  suggestionId,
+  isLocked = false
+}) => {
   const [newComment, setNewComment] = useState('');
   const { data: comments, isLoading } = useQuery({
     queryKey: ['comments', suggestionId],
@@ -133,7 +169,6 @@ const SuggestionComments: React.FC<SuggestionCommentsProps> = ({ suggestionId })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 500));
     setNewComment('');
   };
@@ -148,27 +183,41 @@ const SuggestionComments: React.FC<SuggestionCommentsProps> = ({ suggestionId })
 
   return (
     <div className="p-6">
-      <form onSubmit={handleSubmit} className="mb-6">
-        <TextareaAutosize
-          value={newComment}
-          onChange={e => setNewComment(e.target.value)}
-          placeholder="Write a comment..."
-          className="w-full p-4 border rounded-lg focus:ring-2 focus:ring-[#500000] focus:border-[#500000] resize-none"
-          minRows={3}
-        />
-        <div className="flex justify-end mt-2">
-          <button
-            type="submit"
-            className="px-4 py-2 bg-[#500000] text-white rounded-lg hover:bg-[#400000]"
-          >
-            Post Comment
-          </button>
+      {isLocked ? (
+        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg mb-6">
+          <Lock className="text-gray-500" size={20} />
+          <div>
+            <p className="font-medium text-gray-700">Comments are locked</p>
+            <p className="text-sm text-gray-600">This suggestion is currently under review</p>
+          </div>
         </div>
-      </form>
+      ) : (
+        <form onSubmit={handleSubmit} className="mb-6">
+          <TextareaAutosize
+            value={newComment}
+            onChange={e => setNewComment(e.target.value)}
+            placeholder="Write a comment..."
+            className="w-full p-4 border rounded-lg focus:ring-2 focus:ring-[#500000] focus:border-[#500000] resize-none"
+            minRows={3}
+          />
+          <div className="flex justify-end mt-2">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-[#500000] text-white rounded-lg hover:bg-[#400000]"
+            >
+              Post Comment
+            </button>
+          </div>
+        </form>
+      )}
 
       <div className="divide-y">
         {comments?.map(comment => (
-          <CommentComponent key={comment.id} comment={comment} />
+          <CommentComponent
+            key={comment.id}
+            comment={comment}
+            isLocked={isLocked}
+          />
         ))}
       </div>
     </div>
